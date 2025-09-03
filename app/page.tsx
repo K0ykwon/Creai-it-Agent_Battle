@@ -4,13 +4,16 @@
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FaLightbulb, FaComments, FaPlay } from 'react-icons/fa';
+import { FaLightbulb, FaComments, FaPlay, FaTrash } from 'react-icons/fa';
 import Image from 'next/image';
 
 export default function HomePage() {
   const router = useRouter();
   const [teamName, setTeamName] = useState('');
   const [prompt, setPrompt] = useState('');
+  const [showResetModal, setShowResetModal] = useState(false);
+  const [resetPassword, setResetPassword] = useState('');
+  const [isResetting, setIsResetting] = useState(false);
 
   const handleSavePrompt = async () => {
     if (!teamName.trim() || !prompt.trim()) {
@@ -46,6 +49,39 @@ export default function HomePage() {
 
   const handleStartDebate = () => {
     router.push('/debate');
+  };
+
+  const handleResetDB = async () => {
+    if (!resetPassword.trim()) {
+      alert('비밀번호를 입력해주세요.');
+      return;
+    }
+
+    setIsResetting(true);
+    try {
+      const response = await fetch('/api/admin/reset', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password: resetPassword }),
+      });
+
+      const result = await response.json();
+
+      if (response.ok) {
+        alert(result.message);
+        setShowResetModal(false);
+        setResetPassword('');
+      } else {
+        alert(result.error || 'DB 초기화에 실패했습니다.');
+      }
+    } catch (error) {
+      console.error('DB 초기화 오류:', error);
+      alert('DB 초기화 중 오류가 발생했습니다.');
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   return (
@@ -195,16 +231,29 @@ export default function HomePage() {
               <div className="absolute inset-0 w-full h-full bg-white/20 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
             </motion.button>
 
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="group flex items-center justify-center gap-3 bg-gradient-to-r from-indigo-700 to-indigo-500 text-white py-4 px-8 rounded-full text-lg font-semibold shadow-lg transition-all duration-300 w-full sm:w-auto min-w-[240px] relative overflow-hidden"
-              onClick={handleStartDebate}
-            >
-              <FaPlay className="text-xl group-hover:rotate-12 transition-transform relative z-10" />
-              <span className="relative z-10">토론 시작하기</span>
-              <div className="absolute inset-0 w-full h-full bg-white/20 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
-            </motion.button>
+            <div className="flex flex-col sm:flex-row gap-4 w-full sm:w-auto">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="group flex items-center justify-center gap-3 bg-gradient-to-r from-indigo-700 to-indigo-500 text-white py-4 px-8 rounded-full text-lg font-semibold shadow-lg transition-all duration-300 w-full sm:w-auto min-w-[240px] relative overflow-hidden"
+                onClick={handleStartDebate}
+              >
+                <FaPlay className="text-xl group-hover:rotate-12 transition-transform relative z-10" />
+                <span className="relative z-10">토론 시작하기</span>
+                <div className="absolute inset-0 w-full h-full bg-white/20 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className="group flex items-center justify-center gap-3 bg-gradient-to-r from-red-600 to-red-500 text-white py-4 px-6 rounded-full text-sm font-semibold shadow-lg transition-all duration-300 w-full sm:w-auto relative overflow-hidden"
+                onClick={() => setShowResetModal(true)}
+              >
+                <FaTrash className="text-lg group-hover:rotate-12 transition-transform relative z-10" />
+                <span className="relative z-10">DB 초기화</span>
+                <div className="absolute inset-0 w-full h-full bg-white/20 transform -translate-x-full group-hover:translate-x-0 transition-transform duration-300"></div>
+              </motion.button>
+            </div>
           </motion.div>
 
           {/* Footer */}
@@ -218,6 +267,65 @@ export default function HomePage() {
           </motion.div>
         </div>
       </motion.section>
+
+      {/* DB 초기화 모달 */}
+      {showResetModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-gray-900 border border-gray-700 rounded-2xl p-8 max-w-md w-full shadow-2xl"
+          >
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+                <FaTrash className="text-2xl text-red-500" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-2">DB 초기화</h3>
+              <p className="text-gray-400">
+                모든 팀 데이터가 삭제됩니다.<br />
+                이 작업은 되돌릴 수 없습니다.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  관리자 비밀번호
+                </label>
+                <input
+                  type="password"
+                  value={resetPassword}
+                  onChange={(e) => setResetPassword(e.target.value)}
+                  placeholder="비밀번호를 입력하세요"
+                  className="w-full px-4 py-3 bg-gray-800 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent"
+                  onKeyPress={(e) => e.key === 'Enter' && handleResetDB()}
+                />
+              </div>
+
+              <div className="flex gap-3 pt-4">
+                <button
+                  onClick={() => {
+                    setShowResetModal(false);
+                    setResetPassword('');
+                  }}
+                  className="flex-1 px-4 py-3 bg-gray-700 text-white rounded-lg hover:bg-gray-600 transition-colors"
+                  disabled={isResetting}
+                >
+                  취소
+                </button>
+                <button
+                  onClick={handleResetDB}
+                  disabled={isResetting}
+                  className="flex-1 px-4 py-3 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {isResetting ? '초기화 중...' : '초기화'}
+                </button>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      )}
     </>
   );
 }

@@ -39,12 +39,7 @@ export async function POST(request: NextRequest) {
 
 당신의 역할과 전략: ${team1.prompt}
 
-토론 규칙:
-1. 논리적이고 설득력 있는 주장을 펼치세요
-2. 구체적인 사례와 데이터를 활용하세요
-3. 상대방의 주장에 대해 반박하세요
-4. 각 발언은 2-3문장으로 간결하게 하세요
-5. 공격적이지 않고 전문적인 톤을 유지하세요`;
+2-3문장으로 발언해주세요`;
 
           const team2SystemPrompt = `당신은 토론에서 ${position2} 입장을 담당하는 AI입니다. 주어진 프롬프트에 따라 토론을 진행하세요.
 
@@ -53,13 +48,7 @@ export async function POST(request: NextRequest) {
 팀명: ${team2.teamName}
 
 당신의 역할과 전략: ${team2.prompt}
-
-토론 규칙:
-1. 논리적이고 설득력 있는 주장을 펼치세요
-2. 구체적인 사례와 데이터를 활용하세요
-3. 상대방의 주장에 대해 반박하세요
-4. 각 발언은 2-3문장으로 간결하게 하세요
-5. 공격적이지 않고 전문적인 톤을 유지하세요`;
+2-3문장으로 발언해주세요`;
 
           // 토론 진행 (8-10라운드)
           const team1Messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [{ role: 'system', content: team1SystemPrompt }];
