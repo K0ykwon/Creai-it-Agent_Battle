@@ -4,8 +4,7 @@
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FaLightbulb, FaComments, FaTrophy, FaPlay } from 'react-icons/fa';
-import { Typewriter } from 'react-simple-typewriter';
+import { FaLightbulb, FaComments, FaPlay } from 'react-icons/fa';
 import Image from 'next/image';
 
 export default function HomePage() {

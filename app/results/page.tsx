@@ -4,7 +4,6 @@ import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { FaTrophy, FaRobot, FaChartBar, FaArrowLeft, FaPlay, FaComments, FaStar, FaThumbsUp, FaThumbsDown } from 'react-icons/fa';
-import Image from 'next/image';
 
 interface DebateResult {
   winner: 'ai1' | 'ai2' | 'tie';
