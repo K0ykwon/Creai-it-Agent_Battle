@@ -50,12 +50,21 @@ export async function POST(request: NextRequest) {
 당신의 역할과 전략: ${team2.prompt}
 2-3문장으로 발언해주세요`;
 
-          // 토론 진행 (8-10라운드)
+          // 토론 진행 (각 팀 4번씩 발언)
           const team1Messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [{ role: 'system', content: team1SystemPrompt }];
           const team2Messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [{ role: 'system', content: team2SystemPrompt }];
-          let currentSpeaker = 'team1';
+          let currentSpeaker = 'team1'; // 첫 번째 팀부터 시작
           let debateHistory = '';
-          const totalRounds = Math.floor(Math.random() * 3) + 8; // 8-10라운드
+          const totalRounds = 8; // 각 팀 4번씩 총 8라운드
+
+          // 심사위원이 주제 발제
+          controller.enqueue(encoder.encode(`data: ${JSON.stringify({
+            type: 'message',
+            id: 'judge-intro',
+            speaker: 'judge',
+            content: `안녕하세요. 오늘의 토론 주제는 "${topic}"입니다. ${team1.teamName}은 ${position1} 입장을, ${team2.teamName}은 ${position2} 입장을 대변합니다. 각 팀은 4번씩 발언할 기회가 있습니다. 토론을 시작하겠습니다.`,
+            timestamp: new Date().toISOString()
+          })}\n\n`));
 
           for (let round = 1; round <= totalRounds; round++) {
             // 라운드 시작 알림
@@ -79,7 +88,7 @@ ${debateHistory}
               const completion = await openai.chat.completions.create({
                 model: 'gpt-4',
                 messages: currentMessages,
-                max_tokens: 200,
+                max_tokens: 512,
                 temperature: 0.8,
               });
 
@@ -137,8 +146,8 @@ ${debateHistory}
 
 토론 주제: ${topic}
 
-팀 1: ${team1.teamName} (${position1} 입장)
-팀 2: ${team2.teamName} (${position2} 입장)
+${team1.teamName}: ${position1} 입장
+${team2.teamName}: ${position2} 입장
 
 토론 내용:
 ${debateHistory}
@@ -151,12 +160,16 @@ ${debateHistory}
   "reasoning": "승패 결정 이유 (2-3문장)"
 }
 
-평가 기준:
-1. 논리적 일관성 (30%)
-2. 근거의 설득력 (25%)
-3. 반박의 효과성 (20%)
-4. 창의성과 독창성 (15%)
-5. 전달력과 명확성 (10%)`;
+평가 기준 (가중치를 다양하게 적용):
+1. 논리적 일관성과 추론력
+2. 근거의 설득력과 구체성  
+3. 반박의 효과성과 대응력
+4. 창의성과 독창적 관점
+5. 전달력과 명확성
+6. 감정적 공감과 설득력
+7. 실용성과 현실적 해결책
+
+점수는 60-95 범위에서 다양하게 부여하고, 완전히 똑같은 결과는 피해주세요.`;
 
           try {
             const judgeCompletion = await openai.chat.completions.create({
@@ -164,7 +177,9 @@ ${debateHistory}
               messages: [
                 {
                   role: 'system',
-                  content: '당신은 토론 심사위원입니다. 객관적이고 공정한 판단을 내려주세요.'
+                  content: `당신은 토론 심사위원입니다. 매번 다른 관점에서 객관적이고 공정한 판단을 내려주세요. 
+                  같은 토론이라도 다른 심사위원이 보면 다른 결과가 나올 수 있다는 점을 고려하여, 
+                  다양한 평가 기준을 적용하고 점수도 다양하게 부여해주세요.`
                 },
                 {
                   role: 'user',
@@ -172,14 +187,26 @@ ${debateHistory}
                 }
               ],
               max_tokens: 500,
-              temperature: 0.3,
+              temperature: 0.8,
             });
 
             const judgeResponse = judgeCompletion.choices[0]?.message?.content || '';
             
+            // JSON 파싱 시도
+            let parsedResult = null;
+            try {
+              const jsonMatch = judgeResponse.match(/\{[\s\S]*\}/);
+              if (jsonMatch) {
+                parsedResult = JSON.parse(jsonMatch[0]);
+              }
+            } catch (parseError) {
+              console.error('판정 결과 파싱 오류:', parseError);
+            }
+            
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({
               type: 'judgment',
               content: judgeResponse,
+              result: parsedResult,
               timestamp: new Date().toISOString()
             })}\n\n`));
 

@@ -31,6 +31,7 @@ interface DebateData {
   position1: string;
   position2: string;
   timestamp: string;
+  debateHistory?: string;
 }
 
 export default function ResultsPage() {
@@ -41,41 +42,73 @@ export default function ResultsPage() {
 
   useEffect(() => {
     const savedData = localStorage.getItem('debateData');
+    const savedResult = localStorage.getItem('debateResult');
+    
     if (savedData) {
-      setDebateData(JSON.parse(savedData));
-      // 실제로는 API에서 결과를 가져와야 하지만, 여기서는 샘플 데이터를 사용
-      setTimeout(() => {
-        setResult({
-          winner: 'ai1',
-          ai1Score: 85,
-          ai2Score: 72,
-          ai1Strengths: [
-            '논리적 근거가 탄탄함',
-            '구체적인 사례 제시',
-            '반박에 대한 효과적인 대응'
-          ],
-          ai2Strengths: [
-            '감정적 어필이 효과적',
-            '창의적인 관점 제시',
-            '실용적인 해결책 제안'
-          ],
-          ai1Weaknesses: [
-            '감정적 공감 부족',
-            '일부 주장이 너무 기술적'
-          ],
-          ai2Weaknesses: [
-            '논리적 근거가 부족한 부분',
-            '일부 주장이 추상적'
-          ],
-          summary: '팀 1이 더 강력한 논리적 근거와 구체적인 사례를 바탕으로 우세한 성능을 보였습니다. 팀 2도 감정적 어필과 창의적 관점에서 좋은 점수를 받았지만, 전반적으로 팀 1이 더 설득력 있는 토론을 펼쳤습니다.',
-          detailedAnalysis: '이번 토론에서 팀 1은 체계적인 논리 구조와 구체적인 데이터를 활용하여 강력한 주장을 펼쳤습니다. 특히 반대 의견에 대한 예상 질문들을 미리 준비하여 효과적으로 대응한 점이 높이 평가되었습니다. 팀 2는 인간적 감정과 실용적 관점에서 접근하여 좋은 반응을 얻었지만, 일부 주장에서 논리적 근거가 부족한 부분이 있었습니다.'
-        });
+      const parsedData = JSON.parse(savedData);
+      setDebateData(parsedData);
+      
+      if (savedResult) {
+        // 실제 토론 결과가 있으면 사용
+        const parsedResult = JSON.parse(savedResult);
+        setResult(parsedResult);
         setIsLoading(false);
-      }, 2000);
+      } else {
+        // 결과가 없으면 분석 API 호출
+        analyzeDebate(parsedData);
+      }
     } else {
       router.push('/');
     }
   }, [router]);
+
+  const analyzeDebate = async (data: DebateData) => {
+    try {
+      const response = await fetch('/api/debate/analyze', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          topic: data.topic,
+          team1: data.team1,
+          team2: data.team2,
+          position1: data.position1,
+          position2: data.position2,
+          debateHistory: data.debateHistory || '토론 내용이 없습니다.'
+        }),
+      });
+
+      if (response.ok) {
+        const analysisResult = await response.json();
+        setResult(analysisResult.result);
+        // 결과를 localStorage에 저장
+        localStorage.setItem('debateResult', JSON.stringify(analysisResult.result));
+      } else {
+        // API 실패 시 기본 결과 설정
+        setDefaultResult();
+      }
+    } catch (error) {
+      console.error('토론 분석 오류:', error);
+      setDefaultResult();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const setDefaultResult = () => {
+    setResult({
+      winner: 'tie',
+      ai1Score: 75,
+      ai2Score: 75,
+      ai1Strengths: ['논리적 접근', '구체적 근거'],
+      ai2Strengths: ['창의적 관점', '감정적 어필'],
+      ai1Weaknesses: ['감정적 공감 부족'],
+      ai2Weaknesses: ['논리적 근거 부족'],
+      summary: '양 팀 모두 좋은 토론을 펼쳤습니다.',
+      detailedAnalysis: '토론 분석 중 오류가 발생했습니다.'
+    });
+  };
 
   const goBack = () => {
     router.push('/');

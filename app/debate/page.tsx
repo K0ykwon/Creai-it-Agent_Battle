@@ -147,14 +147,19 @@ export default function DebatePage() {
                 }]);
               } else if (data.type === 'round') {
                 setCurrentRound(data.round);
-                             } else if (data.type === 'judgment') {
-                 setMessages(prev => [...prev, {
-                   id: 'judgment',
-                   speaker: 'judge',
-                   content: data.content,
-                   timestamp: new Date(data.timestamp)
-                 }]);
-               } else if (data.type === 'complete') {
+                                           } else if (data.type === 'judgment') {
+                setMessages(prev => [...prev, {
+                  id: 'judgment',
+                  speaker: 'judge',
+                  content: data.content,
+                  timestamp: new Date(data.timestamp)
+                }]);
+                
+                // 판정 결과를 localStorage에 저장
+                if (data.result) {
+                  localStorage.setItem('debateResult', JSON.stringify(data.result));
+                }
+              } else if (data.type === 'complete') {
                  setIsDebating(false);
                  setIsLoading(false);
                  // 토론 완료 후 결과 페이지로 이동
@@ -358,9 +363,9 @@ export default function DebatePage() {
               <h1 className="text-xl font-bold text-white">AI 토론 배틀</h1>
             </div>
             <div className="flex items-center gap-4">
-              <div className="text-sm text-gray-400">
-                라운드 {currentRound}/8-10
-              </div>
+                              <div className="text-sm text-gray-400">
+                  라운드 {currentRound}/8 (각 팀 4번씩)
+                </div>
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
