@@ -47,14 +47,9 @@ export default function DebatePage() {
   const [position2, setPosition2] = useState('');
 
   useEffect(() => {
-    const savedData = localStorage.getItem('debateData');
-    if (savedData) {
-      setDebateData(JSON.parse(savedData));
-      setIsSetupMode(false);
-    } else {
-      // 팀 목록 불러오기
-      fetchTeams();
-    }
+    // 항상 설정 모드로 시작하고 팀 목록 불러오기
+    setIsSetupMode(true);
+    fetchTeams();
   }, [router]);
 
   const fetchTeams = async () => {
@@ -459,9 +454,24 @@ export default function DebatePage() {
           transition={{ delay: 0.4 }}
           className="bg-white/8 backdrop-blur-lg rounded-2xl border border-white/10 p-6 min-h-[500px]"
         >
-          <div className="flex items-center gap-3 mb-6">
-            <FaComments className="text-xl text-blue-400" />
-            <h3 className="text-xl font-bold text-white">토론 진행 상황</h3>
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <FaComments className="text-xl text-blue-400" />
+              <h3 className="text-xl font-bold text-white">토론 진행 상황</h3>
+            </div>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => {
+                setIsSetupMode(true);
+                setDebateData(null);
+                localStorage.removeItem('debateData');
+              }}
+              className="flex items-center gap-2 px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg transition-colors text-sm"
+            >
+              <FaArrowLeft className="text-sm" />
+              다시 설정하기
+            </motion.button>
           </div>
 
           <div className="space-y-4 max-h-[400px] overflow-y-auto">
