@@ -7,7 +7,6 @@ import Image from 'next/image';
 import Link from 'next/link';
 
 export default function Header() {
-  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (

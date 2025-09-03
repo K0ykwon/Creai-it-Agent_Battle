@@ -3,8 +3,7 @@
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaComments, FaRobot, FaUser, FaPlay, FaPause, FaStop, FaArrowLeft, FaTrophy } from 'react-icons/fa';
-import Image from 'next/image';
+import { FaComments, FaRobot, FaPlay, FaPause, FaStop, FaArrowLeft, FaTrophy } from 'react-icons/fa';
 
 interface DebateMessage {
   id: string;

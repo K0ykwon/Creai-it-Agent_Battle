@@ -4,7 +4,7 @@
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FaBrain, FaRocket, FaLightbulb, FaArrowDown, FaTrash, FaComments, FaTrophy, FaPlay } from 'react-icons/fa';
+import { FaLightbulb, FaComments, FaTrophy, FaPlay } from 'react-icons/fa';
 import { Typewriter } from 'react-simple-typewriter';
 import Image from 'next/image';
 
