@@ -239,7 +239,7 @@ export default function ResultsPage() {
                       강점
                     </h4>
                     <ul className="space-y-2">
-                      {result.ai1Strengths.map((strength, index) => (
+                      {(result.ai1Strengths || []).map((strength, index) => (
                         <li key={index} className="text-sm text-gray-300 flex items-start gap-2">
                           <FaStar className="text-yellow-400 text-xs mt-1 flex-shrink-0" />
                           {strength}
@@ -254,7 +254,7 @@ export default function ResultsPage() {
                       개선점
                     </h4>
                     <ul className="space-y-2">
-                      {result.ai1Weaknesses.map((weakness, index) => (
+                      {(result.ai1Weaknesses || []).map((weakness, index) => (
                         <li key={index} className="text-sm text-gray-300 flex items-start gap-2">
                           <div className="w-2 h-2 bg-red-400 rounded-full mt-2 flex-shrink-0"></div>
                           {weakness}
@@ -285,7 +285,7 @@ export default function ResultsPage() {
                       강점
                     </h4>
                     <ul className="space-y-2">
-                      {result.ai2Strengths.map((strength, index) => (
+                      {(result.ai2Strengths || []).map((strength, index) => (
                         <li key={index} className="text-sm text-gray-300 flex items-start gap-2">
                           <FaStar className="text-yellow-400 text-xs mt-1 flex-shrink-0" />
                           {strength}
@@ -300,7 +300,7 @@ export default function ResultsPage() {
                       개선점
                     </h4>
                     <ul className="space-y-2">
-                      {result.ai2Weaknesses.map((weakness, index) => (
+                      {(result.ai2Weaknesses || []).map((weakness, index) => (
                         <li key={index} className="text-sm text-gray-300 flex items-start gap-2">
                           <div className="w-2 h-2 bg-red-400 rounded-full mt-2 flex-shrink-0"></div>
                           {weakness}
