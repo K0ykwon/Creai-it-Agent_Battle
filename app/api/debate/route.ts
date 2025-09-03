@@ -62,8 +62,8 @@ export async function POST(request: NextRequest) {
 5. 공격적이지 않고 전문적인 톤을 유지하세요`;
 
           // 토론 진행 (8-10라운드)
-          let team1Messages = [{ role: 'system', content: team1SystemPrompt }];
-          let team2Messages = [{ role: 'system', content: team2SystemPrompt }];
+          const team1Messages = [{ role: 'system', content: team1SystemPrompt }];
+          const team2Messages = [{ role: 'system', content: team2SystemPrompt }];
           let currentSpeaker = 'team1';
           let debateHistory = '';
           const totalRounds = Math.floor(Math.random() * 3) + 8; // 8-10라운드
@@ -76,7 +76,6 @@ export async function POST(request: NextRequest) {
             })}\n\n`));
 
             const currentMessages = currentSpeaker === 'team1' ? team1Messages : team2Messages;
-            const systemPrompt = currentSpeaker === 'team1' ? team1SystemPrompt : team2SystemPrompt;
 
             // 현재 발언자에게 토론 상황 전달
             const contextPrompt = `현재 ${round}라운드입니다. 지금까지의 토론 내용:

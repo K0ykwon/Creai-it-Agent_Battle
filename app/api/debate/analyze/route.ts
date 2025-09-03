@@ -75,7 +75,7 @@ ${debateHistory}
         success: true,
         result: analysisResult
       });
-    } catch (parseError) {
+    } catch {
       // JSON 파싱 실패 시 기본 응답
       return NextResponse.json({
         success: true,
