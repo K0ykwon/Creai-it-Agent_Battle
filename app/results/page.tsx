@@ -58,6 +58,43 @@ export default function ResultsPage() {
     };
   }, []);
 
+  const convertDebateResult = useCallback((debateResult: {winner?: string, team1Score?: number, team2Score?: number, team1Strengths?: string | string[], team2Strengths?: string | string[], team1Weaknesses?: string | string[], team2Weaknesses?: string | string[], summary?: string, detailedAnalysis?: string, reasoning?: string}) => {
+    // 토론 API 결과를 결과 페이지 형식으로 변환
+    if (!debateResult) {
+      return setDefaultResult();
+    }
+
+    console.log('변환 전 debateResult:', debateResult);
+    console.log('team1Strengths 타입:', typeof debateResult.team1Strengths, debateResult.team1Strengths);
+
+    const convertedResult = {
+      winner: (debateResult.winner === 'team1' ? 'ai1' : debateResult.winner === 'team2' ? 'ai2' : 'tie') as 'ai1' | 'ai2' | 'tie',
+      ai1Score: debateResult.team1Score || 75,
+      ai2Score: debateResult.team2Score || 75,
+      ai1Strengths: (() => {
+        const strengths = debateResult.team1Strengths;
+        return Array.isArray(strengths) ? strengths : (strengths ? [strengths] : ['논리적 접근', '구체적 근거']);
+      })(),
+      ai2Strengths: (() => {
+        const strengths = debateResult.team2Strengths;
+        return Array.isArray(strengths) ? strengths : (strengths ? [strengths] : ['창의적 관점', '감정적 어필']);
+      })(),
+      ai1Weaknesses: (() => {
+        const weaknesses = debateResult.team1Weaknesses;
+        return Array.isArray(weaknesses) ? weaknesses : (weaknesses ? [weaknesses] : ['감정적 공감 부족']);
+      })(),
+      ai2Weaknesses: (() => {
+        const weaknesses = debateResult.team2Weaknesses;
+        return Array.isArray(weaknesses) ? weaknesses : (weaknesses ? [weaknesses] : ['논리적 근거 부족']);
+      })(),
+      summary: debateResult.summary || debateResult.reasoning || '양 팀 모두 좋은 토론을 펼쳤습니다.',
+      detailedAnalysis: debateResult.detailedAnalysis || debateResult.reasoning || '토론이 성공적으로 완료되었습니다.'
+    };
+    
+    console.log('변환된 결과:', convertedResult);
+    return convertedResult;
+  }, [setDefaultResult]);
+
   const analyzeDebate = useCallback(async (data: DebateData) => {
     try {
       // localStorage에서 토론 메시지 가져오기
@@ -69,8 +106,8 @@ export default function ResultsPage() {
           const messages = JSON.parse(savedMessages);
           // 토론 메시지를 문자열로 변환
           debateHistory = messages
-            .filter((msg: any) => msg.speaker !== 'system') // 시스템 메시지 제외
-            .map((msg: any) => `${msg.speaker === 'team1' ? data.team1.teamName : msg.speaker === 'team2' ? data.team2.teamName : '심사위원'}: ${msg.content}`)
+            .filter((msg: {speaker: string}) => msg.speaker !== 'system') // 시스템 메시지 제외
+            .map((msg: {speaker: string, content: string}) => `${msg.speaker === 'team1' ? data.team1.teamName : msg.speaker === 'team2' ? data.team2.teamName : '심사위원'}: ${msg.content}`)
             .join('\n\n');
         } catch (error) {
           console.error('토론 메시지 파싱 오류:', error);
@@ -119,44 +156,7 @@ export default function ResultsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [setDefaultResult]);
-
-  const convertDebateResult = useCallback((debateResult: {winner?: string, team1Score?: number, team2Score?: number, team1Strengths?: string | string[], team2Strengths?: string | string[], team1Weaknesses?: string | string[], team2Weaknesses?: string | string[], summary?: string, detailedAnalysis?: string, reasoning?: string}) => {
-    // 토론 API 결과를 결과 페이지 형식으로 변환
-    if (!debateResult) {
-      return setDefaultResult();
-    }
-
-    console.log('변환 전 debateResult:', debateResult);
-    console.log('team1Strengths 타입:', typeof debateResult.team1Strengths, debateResult.team1Strengths);
-
-    const convertedResult = {
-      winner: (debateResult.winner === 'team1' ? 'ai1' : debateResult.winner === 'team2' ? 'ai2' : 'tie') as 'ai1' | 'ai2' | 'tie',
-      ai1Score: debateResult.team1Score || 75,
-      ai2Score: debateResult.team2Score || 75,
-      ai1Strengths: (() => {
-        const strengths = debateResult.team1Strengths;
-        return Array.isArray(strengths) ? strengths : (strengths ? [strengths] : ['논리적 접근', '구체적 근거']);
-      })(),
-      ai2Strengths: (() => {
-        const strengths = debateResult.team2Strengths;
-        return Array.isArray(strengths) ? strengths : (strengths ? [strengths] : ['창의적 관점', '감정적 어필']);
-      })(),
-      ai1Weaknesses: (() => {
-        const weaknesses = debateResult.team1Weaknesses;
-        return Array.isArray(weaknesses) ? weaknesses : (weaknesses ? [weaknesses] : ['감정적 공감 부족']);
-      })(),
-      ai2Weaknesses: (() => {
-        const weaknesses = debateResult.team2Weaknesses;
-        return Array.isArray(weaknesses) ? weaknesses : (weaknesses ? [weaknesses] : ['논리적 근거 부족']);
-      })(),
-      summary: debateResult.summary || debateResult.reasoning || '양 팀 모두 좋은 토론을 펼쳤습니다.',
-      detailedAnalysis: debateResult.detailedAnalysis || debateResult.reasoning || '토론이 성공적으로 완료되었습니다.'
-    };
-    
-    console.log('변환된 결과:', convertedResult);
-    return convertedResult;
-  }, [setDefaultResult]);
+  }, [setDefaultResult, convertDebateResult]);
 
   const goBack = () => {
     router.push('/');
@@ -234,7 +234,7 @@ export default function ResultsPage() {
     } else {
       router.push('/');
     }
-  }, [router, analyzeDebate, convertDebateResult]);
+  }, [router, analyzeDebate, convertDebateResult, setDefaultResult]);
 
   if (!debateData) {
     return (
