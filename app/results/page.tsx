@@ -60,6 +60,25 @@ export default function ResultsPage() {
 
   const analyzeDebate = useCallback(async (data: DebateData) => {
     try {
+      // localStorage에서 토론 메시지 가져오기
+      const savedMessages = localStorage.getItem('debateMessages');
+      let debateHistory = '토론 내용이 없습니다.';
+      
+      if (savedMessages) {
+        try {
+          const messages = JSON.parse(savedMessages);
+          // 토론 메시지를 문자열로 변환
+          debateHistory = messages
+            .filter((msg: any) => msg.speaker !== 'system') // 시스템 메시지 제외
+            .map((msg: any) => `${msg.speaker === 'team1' ? data.team1.teamName : msg.speaker === 'team2' ? data.team2.teamName : '심사위원'}: ${msg.content}`)
+            .join('\n\n');
+        } catch (error) {
+          console.error('토론 메시지 파싱 오류:', error);
+        }
+      }
+      
+      console.log('분석에 사용할 토론 내용:', debateHistory);
+      
       const response = await fetch('/api/debate/analyze', {
         method: 'POST',
         headers: {
@@ -71,15 +90,25 @@ export default function ResultsPage() {
           team2: data.team2,
           position1: data.position1,
           position2: data.position2,
-          debateHistory: data.debateHistory || '토론 내용이 없습니다.'
+          debateHistory: debateHistory
         }),
       });
 
       if (response.ok) {
         const analysisResult = await response.json();
-        setResult(analysisResult.result);
-        // 결과를 localStorage에 저장
-        localStorage.setItem('debateResult', JSON.stringify(analysisResult.result));
+        console.log('분석 API 결과:', analysisResult.result);
+        const convertedResult = convertDebateResult(analysisResult.result);
+        console.log('분석 결과 변환됨:', convertedResult);
+        
+        // 변환된 결과가 올바른지 확인
+        if (convertedResult && Array.isArray(convertedResult.ai1Strengths)) {
+          setResult(convertedResult);
+          // 결과를 localStorage에 저장
+          localStorage.setItem('debateResult', JSON.stringify(analysisResult.result));
+        } else {
+          console.error('분석 결과 변환 실패:', convertedResult);
+          setResult(setDefaultResult());
+        }
       } else {
         // API 실패 시 기본 결과 설정
         setResult(setDefaultResult());
@@ -105,14 +134,22 @@ export default function ResultsPage() {
       winner: (debateResult.winner === 'team1' ? 'ai1' : debateResult.winner === 'team2' ? 'ai2' : 'tie') as 'ai1' | 'ai2' | 'tie',
       ai1Score: debateResult.team1Score || 75,
       ai2Score: debateResult.team2Score || 75,
-      ai1Strengths: Array.isArray(debateResult.team1Strengths) ? debateResult.team1Strengths : 
-                   (debateResult.team1Strengths ? [debateResult.team1Strengths] : ['논리적 접근', '구체적 근거']),
-      ai2Strengths: Array.isArray(debateResult.team2Strengths) ? debateResult.team2Strengths : 
-                   (debateResult.team2Strengths ? [debateResult.team2Strengths] : ['창의적 관점', '감정적 어필']),
-      ai1Weaknesses: Array.isArray(debateResult.team1Weaknesses) ? debateResult.team1Weaknesses : 
-                    (debateResult.team1Weaknesses ? [debateResult.team1Weaknesses] : ['감정적 공감 부족']),
-      ai2Weaknesses: Array.isArray(debateResult.team2Weaknesses) ? debateResult.team2Weaknesses : 
-                    (debateResult.team2Weaknesses ? [debateResult.team2Weaknesses] : ['논리적 근거 부족']),
+      ai1Strengths: (() => {
+        const strengths = debateResult.team1Strengths;
+        return Array.isArray(strengths) ? strengths : (strengths ? [strengths] : ['논리적 접근', '구체적 근거']);
+      })(),
+      ai2Strengths: (() => {
+        const strengths = debateResult.team2Strengths;
+        return Array.isArray(strengths) ? strengths : (strengths ? [strengths] : ['창의적 관점', '감정적 어필']);
+      })(),
+      ai1Weaknesses: (() => {
+        const weaknesses = debateResult.team1Weaknesses;
+        return Array.isArray(weaknesses) ? weaknesses : (weaknesses ? [weaknesses] : ['감정적 공감 부족']);
+      })(),
+      ai2Weaknesses: (() => {
+        const weaknesses = debateResult.team2Weaknesses;
+        return Array.isArray(weaknesses) ? weaknesses : (weaknesses ? [weaknesses] : ['논리적 근거 부족']);
+      })(),
       summary: debateResult.summary || debateResult.reasoning || '양 팀 모두 좋은 토론을 펼쳤습니다.',
       detailedAnalysis: debateResult.detailedAnalysis || debateResult.reasoning || '토론이 성공적으로 완료되었습니다.'
     };
@@ -179,14 +216,16 @@ export default function ResultsPage() {
         console.log('새로운 토론 결과 로드:', parsedResult);
         const convertedResult = convertDebateResult(parsedResult);
         console.log('변환된 결과:', convertedResult);
-        setResult(convertedResult);
-        setIsLoading(false);
         
-        // 결과 표시 후 localStorage에서 삭제하여 다음 토론을 위해 준비
-        setTimeout(() => {
-          localStorage.removeItem('debateResult');
-          console.log('결과 표시 완료, localStorage에서 삭제');
-        }, 1000);
+        // 변환된 결과가 올바른지 확인
+        if (convertedResult && Array.isArray(convertedResult.ai1Strengths)) {
+          setResult(convertedResult);
+          setIsLoading(false);
+        } else {
+          console.error('변환된 결과가 올바르지 않음:', convertedResult);
+          setResult(setDefaultResult());
+          setIsLoading(false);
+        }
       } else {
         // 결과가 없으면 분석 API 호출
         console.log('결과 없음, 분석 API 호출');
@@ -314,7 +353,7 @@ export default function ResultsPage() {
                       강점
                     </h4>
                     <ul className="space-y-2">
-                      {(result.ai1Strengths || []).map((strength, index) => (
+                      {(Array.isArray(result.ai1Strengths) ? result.ai1Strengths : []).map((strength, index) => (
                         <li key={index} className="text-sm text-gray-300 flex items-start gap-2">
                           <FaStar className="text-yellow-400 text-xs mt-1 flex-shrink-0" />
                           {strength}
@@ -329,7 +368,7 @@ export default function ResultsPage() {
                       개선점
                     </h4>
                     <ul className="space-y-2">
-                      {(result.ai1Weaknesses || []).map((weakness, index) => (
+                      {(Array.isArray(result.ai1Weaknesses) ? result.ai1Weaknesses : []).map((weakness, index) => (
                         <li key={index} className="text-sm text-gray-300 flex items-start gap-2">
                           <div className="w-2 h-2 bg-red-400 rounded-full mt-2 flex-shrink-0"></div>
                           {weakness}
@@ -360,7 +399,7 @@ export default function ResultsPage() {
                       강점
                     </h4>
                     <ul className="space-y-2">
-                      {(result.ai2Strengths || []).map((strength, index) => (
+                      {(Array.isArray(result.ai2Strengths) ? result.ai2Strengths : []).map((strength, index) => (
                         <li key={index} className="text-sm text-gray-300 flex items-start gap-2">
                           <FaStar className="text-yellow-400 text-xs mt-1 flex-shrink-0" />
                           {strength}
@@ -375,7 +414,7 @@ export default function ResultsPage() {
                       개선점
                     </h4>
                     <ul className="space-y-2">
-                      {(result.ai2Weaknesses || []).map((weakness, index) => (
+                      {(Array.isArray(result.ai2Weaknesses) ? result.ai2Weaknesses : []).map((weakness, index) => (
                         <li key={index} className="text-sm text-gray-300 flex items-start gap-2">
                           <div className="w-2 h-2 bg-red-400 rounded-full mt-2 flex-shrink-0"></div>
                           {weakness}

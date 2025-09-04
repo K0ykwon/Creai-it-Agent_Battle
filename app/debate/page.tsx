@@ -111,6 +111,10 @@ export default function DebatePage() {
   const startDebate = async () => {
     if (!debateData) return;
     
+    // 새로운 토론 시작 시 이전 결과 삭제
+    localStorage.removeItem('debateResult');
+    console.log('새로운 토론 시작, 이전 결과 삭제');
+    
     setIsDebating(true);
     setIsLoading(true);
     setMessages([]);
@@ -175,13 +179,7 @@ export default function DebatePage() {
                  setIsDebating(false);
                  setIsLoading(false);
                  
-                 // 이전 결과 삭제
-                 if (data.clearPreviousResult) {
-                   localStorage.removeItem('debateResult');
-                   console.log('이전 토론 결과 삭제됨');
-                 }
-                 
-                 // 토론 완료 후 결과 페이지로 이동
+                 // 토론 완료 후 결과 페이지로 이동 (결과는 삭제하지 않음)
                  setTimeout(() => {
                    router.push('/results');
                  }, 3000);

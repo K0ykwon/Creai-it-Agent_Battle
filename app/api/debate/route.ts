@@ -232,8 +232,7 @@ ${debateHistory}
           // 토론 완료
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({
             type: 'complete',
-            message: '토론이 완료되었습니다.',
-            clearPreviousResult: true
+            message: '토론이 완료되었습니다.'
           })}\n\n`));
 
           controller.close();
