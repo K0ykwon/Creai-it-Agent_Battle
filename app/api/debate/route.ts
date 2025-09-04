@@ -157,7 +157,13 @@ ${debateHistory}
   "winner": "team1" | "team2" | "tie",
   "team1Score": 0-100,
   "team2Score": 0-100,
-  "reasoning": "승패 결정 이유 (2-3문장)"
+  "reasoning": "승패 결정 이유 (2-3문장)",
+  "team1Strengths": "팀1의 강점을 2-3문장으로 설명",
+  "team2Strengths": "팀2의 강점을 2-3문장으로 설명",
+  "team1Weaknesses": "팀1의 약점을 1-2문장으로 설명",
+  "team2Weaknesses": "팀2의 약점을 1-2문장으로 설명",
+  "summary": "전체 토론 요약 (3-4문장)",
+  "detailedAnalysis": "상세 분석"
 }
 
 평가 기준 (가중치를 다양하게 적용):
@@ -169,7 +175,14 @@ ${debateHistory}
 6. 감정적 공감과 설득력
 7. 실용성과 현실적 해결책
 
-점수는 60-95 범위에서 다양하게 부여하고, 완전히 똑같은 결과는 피해주세요.`;
+점수는 60-95 범위에서 다양하게 부여하고, 완전히 똑같은 결과는 피해주세요.
+
+중요 지침:
+- team1Strengths와 team2Strengths는 각 팀의 실제 토론 내용을 바탕으로 강점을 2-3문장으로 설명하세요
+- team1Weaknesses와 team2Weaknesses는 각 팀의 실제 토론 내용을 바탕으로 약점을 1-2문장으로 설명하세요
+- summary는 전체 토론의 흐름과 주요 논점을 요약하세요
+- detailedAnalysis는 평가 기준에 따라 각 팀의 성과를 상세히 분석하세요
+- 모든 내용은 실제 토론 내용을 바탕으로 작성하세요`;
 
           try {
             const judgeCompletion = await openai.chat.completions.create({
@@ -186,7 +199,7 @@ ${debateHistory}
                   content: judgePrompt
                 }
               ],
-              max_tokens: 500,
+              max_tokens: 1000,
               temperature: 0.8,
             });
 

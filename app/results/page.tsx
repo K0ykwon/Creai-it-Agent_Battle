@@ -3,7 +3,7 @@
 import { useRouter } from 'next/navigation';
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { FaTrophy, FaRobot, FaChartBar, FaArrowLeft, FaPlay, FaComments, FaStar, FaThumbsUp, FaThumbsDown } from 'react-icons/fa';
+import { FaTrophy, FaRobot, FaChartBar, FaArrowLeft, FaPlay, FaComments, FaStar, FaThumbsUp, FaThumbsDown, FaPause, FaStop, FaRedo } from 'react-icons/fa';
 
 interface DebateResult {
   winner: 'ai1' | 'ai2' | 'tie';
@@ -39,6 +39,10 @@ export default function ResultsPage() {
   const [debateData, setDebateData] = useState<DebateData | null>(null);
   const [result, setResult] = useState<DebateResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showReplayModal, setShowReplayModal] = useState(false);
+  const [replayMessages, setReplayMessages] = useState<any[]>([]);
+  const [currentReplayIndex, setCurrentReplayIndex] = useState(0);
+  const [isReplaying, setIsReplaying] = useState(false);
 
   useEffect(() => {
     const savedData = localStorage.getItem('debateData');
@@ -51,7 +55,11 @@ export default function ResultsPage() {
       if (savedResult) {
         // 실제 토론 결과가 있으면 사용
         const parsedResult = JSON.parse(savedResult);
-        setResult(parsedResult);
+        console.log('저장된 토론 결과:', parsedResult);
+        // 토론 API 결과를 결과 페이지 형식으로 변환
+        const convertedResult = convertDebateResult(parsedResult);
+        console.log('변환된 결과:', convertedResult);
+        setResult(convertedResult);
         setIsLoading(false);
       } else {
         // 결과가 없으면 분석 API 호출
@@ -86,19 +94,38 @@ export default function ResultsPage() {
         localStorage.setItem('debateResult', JSON.stringify(analysisResult.result));
       } else {
         // API 실패 시 기본 결과 설정
-        setDefaultResult();
+        setResult(setDefaultResult());
       }
     } catch (error) {
       console.error('토론 분석 오류:', error);
-      setDefaultResult();
+      setResult(setDefaultResult());
     } finally {
       setIsLoading(false);
     }
   };
 
+  const convertDebateResult = (debateResult: any) => {
+    // 토론 API 결과를 결과 페이지 형식으로 변환
+    if (!debateResult) {
+      return setDefaultResult();
+    }
+
+    return {
+      winner: (debateResult.winner === 'team1' ? 'ai1' : debateResult.winner === 'team2' ? 'ai2' : 'tie') as 'ai1' | 'ai2' | 'tie',
+      ai1Score: debateResult.team1Score || 75,
+      ai2Score: debateResult.team2Score || 75,
+      ai1Strengths: debateResult.team1Strengths ? [debateResult.team1Strengths] : ['논리적 접근', '구체적 근거'],
+      ai2Strengths: debateResult.team2Strengths ? [debateResult.team2Strengths] : ['창의적 관점', '감정적 어필'],
+      ai1Weaknesses: debateResult.team1Weaknesses ? [debateResult.team1Weaknesses] : ['감정적 공감 부족'],
+      ai2Weaknesses: debateResult.team2Weaknesses ? [debateResult.team2Weaknesses] : ['논리적 근거 부족'],
+      summary: debateResult.summary || debateResult.reasoning || '양 팀 모두 좋은 토론을 펼쳤습니다.',
+      detailedAnalysis: debateResult.detailedAnalysis || debateResult.reasoning || '토론이 성공적으로 완료되었습니다.'
+    };
+  };
+
   const setDefaultResult = () => {
-    setResult({
-      winner: 'tie',
+    return {
+      winner: 'tie' as 'ai1' | 'ai2' | 'tie',
       ai1Score: 75,
       ai2Score: 75,
       ai1Strengths: ['논리적 접근', '구체적 근거'],
@@ -107,7 +134,7 @@ export default function ResultsPage() {
       ai2Weaknesses: ['논리적 근거 부족'],
       summary: '양 팀 모두 좋은 토론을 펼쳤습니다.',
       detailedAnalysis: '토론 분석 중 오류가 발생했습니다.'
-    });
+    };
   };
 
   const goBack = () => {
@@ -119,7 +146,43 @@ export default function ResultsPage() {
   };
 
   const viewDebate = () => {
-    router.push('/debate');
+    const savedMessages = localStorage.getItem('debateMessages');
+    if (savedMessages) {
+      const messages = JSON.parse(savedMessages);
+      setReplayMessages(messages);
+      setCurrentReplayIndex(0);
+      setShowReplayModal(true);
+    } else {
+      alert('토론 메시지 데이터가 없습니다.');
+    }
+  };
+
+  const startReplay = () => {
+    setIsReplaying(true);
+    setCurrentReplayIndex(0);
+    playNextMessage();
+  };
+
+  const playNextMessage = () => {
+    if (currentReplayIndex < replayMessages.length) {
+      setTimeout(() => {
+        setCurrentReplayIndex(prev => prev + 1);
+        if (currentReplayIndex + 1 < replayMessages.length) {
+          playNextMessage();
+        } else {
+          setIsReplaying(false);
+        }
+      }, 2000); // 2초마다 다음 메시지
+    }
+  };
+
+  const stopReplay = () => {
+    setIsReplaying(false);
+  };
+
+  const resetReplay = () => {
+    setCurrentReplayIndex(0);
+    setIsReplaying(false);
   };
 
   if (!debateData) {
@@ -356,6 +419,122 @@ export default function ResultsPage() {
           </>
         ) : null}
       </div>
+
+      {/* 토론 재생 모달 */}
+      {showReplayModal && (
+        <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
+            className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-4xl w-full max-h-[80vh] shadow-2xl flex flex-col"
+          >
+            {/* 모달 헤더 */}
+            <div className="flex items-center justify-between mb-6">
+              <div className="flex items-center gap-3">
+                <FaComments className="text-2xl text-blue-400" />
+                <h3 className="text-2xl font-bold text-white">토론 다시 보기</h3>
+              </div>
+              <button
+                onClick={() => setShowReplayModal(false)}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <FaArrowLeft className="text-xl" />
+              </button>
+            </div>
+
+            {/* 재생 컨트롤 */}
+            <div className="flex items-center justify-center gap-4 mb-6">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={startReplay}
+                disabled={isReplaying}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                <FaPlay className="text-sm" />
+                재생
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={stopReplay}
+                disabled={!isReplaying}
+                className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                <FaPause className="text-sm" />
+                일시정지
+              </motion.button>
+              
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={resetReplay}
+                className="flex items-center gap-2 bg-gray-600 hover:bg-gray-500 text-white px-4 py-2 rounded-lg transition-colors"
+              >
+                <FaRedo className="text-sm" />
+                처음부터
+              </motion.button>
+            </div>
+
+            {/* 진행률 표시 */}
+            <div className="mb-4">
+              <div className="flex justify-between text-sm text-gray-400 mb-2">
+                <span>진행률</span>
+                <span>{currentReplayIndex} / {replayMessages.length}</span>
+              </div>
+              <div className="w-full bg-gray-700 rounded-full h-2">
+                <div 
+                  className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${(currentReplayIndex / replayMessages.length) * 100}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* 토론 메시지 */}
+            <div className="flex-1 overflow-y-auto space-y-4 max-h-96">
+              {replayMessages.slice(0, currentReplayIndex + 1).map((message, index) => (
+                <motion.div
+                  key={message.id || index}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className={`p-4 rounded-lg ${
+                    message.speaker === 'judge' 
+                      ? 'bg-yellow-500/20 border border-yellow-500/30' 
+                      : message.speaker === 'team1'
+                      ? 'bg-blue-500/20 border border-blue-500/30'
+                      : 'bg-purple-500/20 border border-purple-500/30'
+                  }`}
+                >
+                  <div className="flex items-center gap-3 mb-2">
+                    {message.speaker === 'judge' ? (
+                      <FaTrophy className="text-yellow-400" />
+                    ) : message.speaker === 'team1' ? (
+                      <FaRobot className="text-blue-400" />
+                    ) : (
+                      <FaRobot className="text-purple-400" />
+                    )}
+                    <span className="font-semibold text-white">
+                      {message.speaker === 'judge' 
+                        ? '심사위원' 
+                        : message.speaker === 'team1' 
+                        ? debateData?.team1.teamName 
+                        : debateData?.team2.teamName
+                      }
+                    </span>
+                    <span className="text-xs text-gray-400">
+                      {new Date(message.timestamp).toLocaleTimeString()}
+                    </span>
+                  </div>
+                  <p className="text-gray-200 whitespace-pre-wrap">{message.content}</p>
+                </motion.div>
+              ))}
+            </div>
+          </motion.div>
+        </div>
+      )}
     </div>
   );
 }

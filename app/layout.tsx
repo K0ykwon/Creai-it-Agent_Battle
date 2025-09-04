@@ -14,7 +14,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: 'CREAI+IT 에이전트 배틀틀',
+  title: 'CREAI+IT Agent Battle',
   description: '당신의 에이전트를 강력한 논리로 무장시키세요',
   viewport: 'width=device-width, initial-scale=1, maximum-scale=1',
   themeColor: '#111827', // Dark theme color

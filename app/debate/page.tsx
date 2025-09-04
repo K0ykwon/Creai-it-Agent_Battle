@@ -162,6 +162,8 @@ export default function DebatePage() {
               } else if (data.type === 'complete') {
                  setIsDebating(false);
                  setIsLoading(false);
+                 // 토론 메시지 데이터를 localStorage에 저장
+                 localStorage.setItem('debateMessages', JSON.stringify(messages));
                  // 토론 완료 후 결과 페이지로 이동
                  setTimeout(() => {
                    router.push('/results');
