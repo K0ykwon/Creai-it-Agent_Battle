@@ -25,6 +25,7 @@ interface DebateData {
   topic: string;
   position1: string;
   position2: string;
+  totalRounds: number;
   timestamp: string;
 }
 
@@ -45,12 +46,21 @@ export default function DebatePage() {
   const [topic, setTopic] = useState('');
   const [position1, setPosition1] = useState('');
   const [position2, setPosition2] = useState('');
+  const [totalRounds, setTotalRounds] = useState(8); // 기본 8라운드
 
   useEffect(() => {
     // 항상 설정 모드로 시작하고 팀 목록 불러오기
     setIsSetupMode(true);
     fetchTeams();
   }, [router]);
+
+  // 메시지가 변경될 때마다 localStorage에 저장
+  useEffect(() => {
+    if (messages.length > 0) {
+      console.log('메시지 업데이트됨:', messages);
+      localStorage.setItem('debateMessages', JSON.stringify(messages));
+    }
+  }, [messages]);
 
   const fetchTeams = async () => {
     try {
@@ -89,6 +99,7 @@ export default function DebatePage() {
       topic,
       position1,
       position2,
+      totalRounds,
       timestamp: new Date().toISOString()
     };
 
@@ -162,8 +173,6 @@ export default function DebatePage() {
               } else if (data.type === 'complete') {
                  setIsDebating(false);
                  setIsLoading(false);
-                 // 토론 메시지 데이터를 localStorage에 저장
-                 localStorage.setItem('debateMessages', JSON.stringify(messages));
                  // 토론 완료 후 결과 페이지로 이동
                  setTimeout(() => {
                    router.push('/results');
@@ -245,6 +254,29 @@ export default function DebatePage() {
                   placeholder="예: 인공지능이 인간의 일자리를 대체할 것인가?"
                   className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
+              </div>
+
+              {/* 라운드 수 설정 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  토론 라운드 수
+                </label>
+                <div className="flex items-center gap-4">
+                  <input
+                    type="range"
+                    min="4"
+                    max="16"
+                    value={totalRounds}
+                    onChange={(e) => setTotalRounds(parseInt(e.target.value))}
+                    className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"
+                  />
+                  <div className="text-white font-semibold min-w-[60px] text-center">
+                    {totalRounds}라운드
+                  </div>
+                </div>
+                <div className="text-xs text-gray-400 mt-1">
+                  각 팀이 {Math.floor(totalRounds / 2)}번씩 발언합니다
+                </div>
               </div>
 
               {/* 팀 선택 */}
@@ -366,7 +398,7 @@ export default function DebatePage() {
             </div>
             <div className="flex items-center gap-4">
                               <div className="text-sm text-gray-400">
-                  라운드 {currentRound}/8 (각 팀 4번씩)
+                  라운드 {currentRound}/{debateData?.totalRounds || 8} (각 팀 {Math.floor((debateData?.totalRounds || 8) / 2)}번씩)
                 </div>
               <motion.button
                 whileHover={{ scale: 1.05 }}

@@ -7,7 +7,7 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    const { topic, team1, team2, position1, position2 } = await request.json();
+    const { topic, team1, team2, position1, position2, totalRounds } = await request.json();
 
     if (!topic || !team1 || !team2 || !position1 || !position2) {
       return NextResponse.json(
@@ -55,18 +55,18 @@ export async function POST(request: NextRequest) {
           const team2Messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }> = [{ role: 'system', content: team2SystemPrompt }];
           let currentSpeaker = 'team1'; // 첫 번째 팀부터 시작
           let debateHistory = '';
-          const totalRounds = 8; // 각 팀 4번씩 총 8라운드
+          const rounds = totalRounds || 8; // 설정된 라운드 수 또는 기본 8라운드
 
           // 심사위원이 주제 발제
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({
             type: 'message',
             id: 'judge-intro',
             speaker: 'judge',
-            content: `안녕하세요. 오늘의 토론 주제는 "${topic}"입니다. ${team1.teamName}은 ${position1} 입장을, ${team2.teamName}은 ${position2} 입장을 대변합니다. 각 팀은 4번씩 발언할 기회가 있습니다. 토론을 시작하겠습니다.`,
+            content: `안녕하세요. 오늘의 토론 주제는 "${topic}"입니다. ${team1.teamName}은 ${position1} 입장을, ${team2.teamName}은 ${position2} 입장을 대변합니다. 총 ${rounds}라운드로 진행되며, 각 팀은 ${Math.floor(rounds / 2)}번씩 발언할 기회가 있습니다. 토론을 시작하겠습니다.`,
             timestamp: new Date().toISOString()
           })}\n\n`));
 
-          for (let round = 1; round <= totalRounds; round++) {
+          for (let round = 1; round <= rounds; round++) {
             // 라운드 시작 알림
             controller.enqueue(encoder.encode(`data: ${JSON.stringify({
               type: 'round',
@@ -199,7 +199,7 @@ ${debateHistory}
                   content: judgePrompt
                 }
               ],
-              max_tokens: 1000,
+              max_tokens: 1024,
               temperature: 0.8,
             });
 

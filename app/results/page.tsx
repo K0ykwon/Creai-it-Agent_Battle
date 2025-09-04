@@ -30,6 +30,7 @@ interface DebateData {
   topic: string;
   position1: string;
   position2: string;
+  totalRounds: number;
   timestamp: string;
   debateHistory?: string;
 }
@@ -52,17 +53,17 @@ export default function ResultsPage() {
       const parsedData = JSON.parse(savedData);
       setDebateData(parsedData);
       
+      // 결과가 있으면 무조건 덮어쓰기
       if (savedResult) {
-        // 실제 토론 결과가 있으면 사용
         const parsedResult = JSON.parse(savedResult);
         console.log('저장된 토론 결과:', parsedResult);
-        // 토론 API 결과를 결과 페이지 형식으로 변환
         const convertedResult = convertDebateResult(parsedResult);
         console.log('변환된 결과:', convertedResult);
         setResult(convertedResult);
         setIsLoading(false);
       } else {
         // 결과가 없으면 분석 API 호출
+        console.log('결과 없음, 분석 API 호출');
         analyzeDebate(parsedData);
       }
     } else {
@@ -147,33 +148,34 @@ export default function ResultsPage() {
 
   const viewDebate = () => {
     const savedMessages = localStorage.getItem('debateMessages');
+    console.log('저장된 메시지:', savedMessages);
+    console.log('localStorage 전체 내용:', localStorage);
+    
     if (savedMessages) {
-      const messages = JSON.parse(savedMessages);
-      setReplayMessages(messages);
-      setCurrentReplayIndex(0);
-      setShowReplayModal(true);
+      try {
+        const messages = JSON.parse(savedMessages);
+        console.log('파싱된 메시지:', messages);
+        console.log('메시지 개수:', messages.length);
+        
+        if (messages.length > 0) {
+          setReplayMessages(messages);
+          setCurrentReplayIndex(0);
+          setShowReplayModal(true);
+        } else {
+          alert('토론 메시지가 비어있습니다.');
+        }
+      } catch (error) {
+        console.error('JSON 파싱 오류:', error);
+        alert('토론 메시지 데이터를 파싱할 수 없습니다.');
+      }
     } else {
-      alert('토론 메시지 데이터가 없습니다.');
+      alert('토론 메시지 데이터가 없습니다. localStorage를 확인해주세요.');
     }
   };
 
   const startReplay = () => {
     setIsReplaying(true);
-    setCurrentReplayIndex(0);
-    playNextMessage();
-  };
-
-  const playNextMessage = () => {
-    if (currentReplayIndex < replayMessages.length) {
-      setTimeout(() => {
-        setCurrentReplayIndex(prev => prev + 1);
-        if (currentReplayIndex + 1 < replayMessages.length) {
-          playNextMessage();
-        } else {
-          setIsReplaying(false);
-        }
-      }, 2000); // 2초마다 다음 메시지
-    }
+    setCurrentReplayIndex(replayMessages.length - 1); // 모든 메시지 표시
   };
 
   const stopReplay = () => {
@@ -182,6 +184,11 @@ export default function ResultsPage() {
 
   const resetReplay = () => {
     setCurrentReplayIndex(0);
+    setIsReplaying(false);
+  };
+
+  const showAllMessages = () => {
+    setCurrentReplayIndex(replayMessages.length - 1);
     setIsReplaying(false);
   };
 
@@ -448,23 +455,11 @@ export default function ResultsPage() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={startReplay}
-                disabled={isReplaying}
-                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
+                onClick={showAllMessages}
+                className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded-lg transition-colors"
               >
-                <FaPlay className="text-sm" />
-                재생
-              </motion.button>
-              
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={stopReplay}
-                disabled={!isReplaying}
-                className="flex items-center gap-2 bg-yellow-600 hover:bg-yellow-500 disabled:opacity-50 text-white px-4 py-2 rounded-lg transition-colors"
-              >
-                <FaPause className="text-sm" />
-                일시정지
+                <FaComments className="text-sm" />
+                전체 보기
               </motion.button>
               
               <motion.button
@@ -478,23 +473,29 @@ export default function ResultsPage() {
               </motion.button>
             </div>
 
-            {/* 진행률 표시 */}
+            {/* 메시지 정보 */}
             <div className="mb-4">
               <div className="flex justify-between text-sm text-gray-400 mb-2">
-                <span>진행률</span>
-                <span>{currentReplayIndex} / {replayMessages.length}</span>
+                <span>토론 메시지</span>
+                <span>{currentReplayIndex + 1} / {replayMessages.length}</span>
               </div>
               <div className="w-full bg-gray-700 rounded-full h-2">
                 <div 
                   className="bg-blue-500 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${(currentReplayIndex / replayMessages.length) * 100}%` }}
+                  style={{ width: `${((currentReplayIndex + 1) / replayMessages.length) * 100}%` }}
                 ></div>
               </div>
             </div>
 
             {/* 토론 메시지 */}
             <div className="flex-1 overflow-y-auto space-y-4 max-h-96">
-              {replayMessages.slice(0, currentReplayIndex + 1).map((message, index) => (
+              {replayMessages.length === 0 ? (
+                <div className="text-center py-8 text-gray-400">
+                  <FaComments className="text-4xl mx-auto mb-4" />
+                  <p>토론 메시지가 없습니다.</p>
+                </div>
+              ) : (
+                replayMessages.slice(0, currentReplayIndex + 1).map((message, index) => (
                 <motion.div
                   key={message.id || index}
                   initial={{ opacity: 0, y: 20 }}
@@ -530,7 +531,8 @@ export default function ResultsPage() {
                   </div>
                   <p className="text-gray-200 whitespace-pre-wrap">{message.content}</p>
                 </motion.div>
-              ))}
+                ))
+              )}
             </div>
           </motion.div>
         </div>
