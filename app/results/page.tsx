@@ -92,23 +92,33 @@ export default function ResultsPage() {
     }
   }, [setDefaultResult]);
 
-  const convertDebateResult = useCallback((debateResult: {winner?: string, team1Score?: number, team2Score?: number, team1Strengths?: string, team2Strengths?: string, team1Weaknesses?: string, team2Weaknesses?: string, summary?: string, detailedAnalysis?: string, reasoning?: string}) => {
+  const convertDebateResult = useCallback((debateResult: {winner?: string, team1Score?: number, team2Score?: number, team1Strengths?: string | string[], team2Strengths?: string | string[], team1Weaknesses?: string | string[], team2Weaknesses?: string | string[], summary?: string, detailedAnalysis?: string, reasoning?: string}) => {
     // 토론 API 결과를 결과 페이지 형식으로 변환
     if (!debateResult) {
       return setDefaultResult();
     }
 
-    return {
+    console.log('변환 전 debateResult:', debateResult);
+    console.log('team1Strengths 타입:', typeof debateResult.team1Strengths, debateResult.team1Strengths);
+
+    const convertedResult = {
       winner: (debateResult.winner === 'team1' ? 'ai1' : debateResult.winner === 'team2' ? 'ai2' : 'tie') as 'ai1' | 'ai2' | 'tie',
       ai1Score: debateResult.team1Score || 75,
       ai2Score: debateResult.team2Score || 75,
-      ai1Strengths: debateResult.team1Strengths ? [debateResult.team1Strengths] : ['논리적 접근', '구체적 근거'],
-      ai2Strengths: debateResult.team2Strengths ? [debateResult.team2Strengths] : ['창의적 관점', '감정적 어필'],
-      ai1Weaknesses: debateResult.team1Weaknesses ? [debateResult.team1Weaknesses] : ['감정적 공감 부족'],
-      ai2Weaknesses: debateResult.team2Weaknesses ? [debateResult.team2Weaknesses] : ['논리적 근거 부족'],
+      ai1Strengths: Array.isArray(debateResult.team1Strengths) ? debateResult.team1Strengths : 
+                   (debateResult.team1Strengths ? [debateResult.team1Strengths] : ['논리적 접근', '구체적 근거']),
+      ai2Strengths: Array.isArray(debateResult.team2Strengths) ? debateResult.team2Strengths : 
+                   (debateResult.team2Strengths ? [debateResult.team2Strengths] : ['창의적 관점', '감정적 어필']),
+      ai1Weaknesses: Array.isArray(debateResult.team1Weaknesses) ? debateResult.team1Weaknesses : 
+                    (debateResult.team1Weaknesses ? [debateResult.team1Weaknesses] : ['감정적 공감 부족']),
+      ai2Weaknesses: Array.isArray(debateResult.team2Weaknesses) ? debateResult.team2Weaknesses : 
+                    (debateResult.team2Weaknesses ? [debateResult.team2Weaknesses] : ['논리적 근거 부족']),
       summary: debateResult.summary || debateResult.reasoning || '양 팀 모두 좋은 토론을 펼쳤습니다.',
       detailedAnalysis: debateResult.detailedAnalysis || debateResult.reasoning || '토론이 성공적으로 완료되었습니다.'
     };
+    
+    console.log('변환된 결과:', convertedResult);
+    return convertedResult;
   }, [setDefaultResult]);
 
   const goBack = () => {
