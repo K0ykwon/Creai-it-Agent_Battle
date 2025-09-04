@@ -174,6 +174,13 @@ export default function DebatePage() {
               } else if (data.type === 'complete') {
                  setIsDebating(false);
                  setIsLoading(false);
+                 
+                 // 이전 결과 삭제
+                 if (data.clearPreviousResult) {
+                   localStorage.removeItem('debateResult');
+                   console.log('이전 토론 결과 삭제됨');
+                 }
+                 
                  // 토론 완료 후 결과 페이지로 이동
                  setTimeout(() => {
                    router.push('/results');

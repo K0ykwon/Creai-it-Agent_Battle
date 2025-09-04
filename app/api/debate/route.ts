@@ -37,7 +37,8 @@ export async function POST(request: NextRequest) {
 당신의 입장: ${position1}
 팀명: ${team1.teamName}
 
-당신의 역할과 전략: ${team1.prompt}
+- 당신의 역할과 전략을 명심하고 반드시 이에 따라 토론을 진행해주세요.
+**중요 ** 당신의 역할과 전략: ${team1.prompt}
 
 2-3문장으로 발언해주세요`;
 
@@ -47,7 +48,8 @@ export async function POST(request: NextRequest) {
 당신의 입장: ${position2}
 팀명: ${team2.teamName}
 
-당신의 역할과 전략: ${team2.prompt}
+- 당신의 역할과 전략을 명심하고 반드시 이에 따라 토론을 진행해주세요.
+**중요 ** 당신의 역할과 전략: ${team2.prompt}
 2-3문장으로 발언해주세요`;
 
           // 토론 진행 (각 팀 4번씩 발언)
@@ -230,7 +232,8 @@ ${debateHistory}
           // 토론 완료
           controller.enqueue(encoder.encode(`data: ${JSON.stringify({
             type: 'complete',
-            message: '토론이 완료되었습니다.'
+            message: '토론이 완료되었습니다.',
+            clearPreviousResult: true
           })}\n\n`));
 
           controller.close();

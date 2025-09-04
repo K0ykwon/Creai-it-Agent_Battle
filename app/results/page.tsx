@@ -163,14 +163,20 @@ export default function ResultsPage() {
       const parsedData = JSON.parse(savedData);
       setDebateData(parsedData);
       
-      // 결과가 있으면 무조건 덮어쓰기
+      // 결과가 있으면 무조건 덮어쓰기 (새로운 토론 결과)
       if (savedResult) {
         const parsedResult = JSON.parse(savedResult);
-        console.log('저장된 토론 결과:', parsedResult);
+        console.log('새로운 토론 결과 로드:', parsedResult);
         const convertedResult = convertDebateResult(parsedResult);
         console.log('변환된 결과:', convertedResult);
         setResult(convertedResult);
         setIsLoading(false);
+        
+        // 결과 표시 후 localStorage에서 삭제하여 다음 토론을 위해 준비
+        setTimeout(() => {
+          localStorage.removeItem('debateResult');
+          console.log('결과 표시 완료, localStorage에서 삭제');
+        }, 1000);
       } else {
         // 결과가 없으면 분석 API 호출
         console.log('결과 없음, 분석 API 호출');
