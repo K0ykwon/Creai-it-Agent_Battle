@@ -128,6 +128,7 @@ export default function DebatePage() {
           team2: debateData.team2,
           position1: debateData.position1,
           position2: debateData.position2,
+          totalRounds: debateData.totalRounds,
         }),
       });
 
@@ -266,6 +267,7 @@ export default function DebatePage() {
                     type="range"
                     min="4"
                     max="16"
+                    step="2"
                     value={totalRounds}
                     onChange={(e) => setTotalRounds(parseInt(e.target.value))}
                     className="flex-1 h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer"

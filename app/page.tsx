@@ -4,8 +4,7 @@
 import { useRouter } from 'next/navigation';
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { FaLightbulb, FaComments, FaPlay, FaTrash } from 'react-icons/fa';
-import Image from 'next/image';
+import { FaLightbulb, FaPlay, FaTrash } from 'react-icons/fa';
 
 export default function HomePage() {
   const router = useRouter();

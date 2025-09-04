@@ -1,9 +1,9 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { motion } from 'framer-motion';
-import { FaTrophy, FaRobot, FaChartBar, FaArrowLeft, FaPlay, FaComments, FaStar, FaThumbsUp, FaThumbsDown, FaPause, FaStop, FaRedo } from 'react-icons/fa';
+import { FaTrophy, FaRobot, FaChartBar, FaArrowLeft, FaPlay, FaComments, FaStar, FaThumbsUp, FaThumbsDown, FaRedo } from 'react-icons/fa';
 
 interface DebateResult {
   winner: 'ai1' | 'ai2' | 'tie';
@@ -41,37 +41,24 @@ export default function ResultsPage() {
   const [result, setResult] = useState<DebateResult | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showReplayModal, setShowReplayModal] = useState(false);
-  const [replayMessages, setReplayMessages] = useState<any[]>([]);
+  const [replayMessages, setReplayMessages] = useState<{id: string, speaker: 'team1' | 'team2' | 'judge', content: string, timestamp: string}[]>([]);
   const [currentReplayIndex, setCurrentReplayIndex] = useState(0);
-  const [isReplaying, setIsReplaying] = useState(false);
 
-  useEffect(() => {
-    const savedData = localStorage.getItem('debateData');
-    const savedResult = localStorage.getItem('debateResult');
-    
-    if (savedData) {
-      const parsedData = JSON.parse(savedData);
-      setDebateData(parsedData);
-      
-      // 결과가 있으면 무조건 덮어쓰기
-      if (savedResult) {
-        const parsedResult = JSON.parse(savedResult);
-        console.log('저장된 토론 결과:', parsedResult);
-        const convertedResult = convertDebateResult(parsedResult);
-        console.log('변환된 결과:', convertedResult);
-        setResult(convertedResult);
-        setIsLoading(false);
-      } else {
-        // 결과가 없으면 분석 API 호출
-        console.log('결과 없음, 분석 API 호출');
-        analyzeDebate(parsedData);
-      }
-    } else {
-      router.push('/');
-    }
-  }, [router]);
+  const setDefaultResult = useCallback(() => {
+    return {
+      winner: 'tie' as 'ai1' | 'ai2' | 'tie',
+      ai1Score: 75,
+      ai2Score: 75,
+      ai1Strengths: ['논리적 접근', '구체적 근거'],
+      ai2Strengths: ['창의적 관점', '감정적 어필'],
+      ai1Weaknesses: ['감정적 공감 부족'],
+      ai2Weaknesses: ['논리적 근거 부족'],
+      summary: '양 팀 모두 좋은 토론을 펼쳤습니다.',
+      detailedAnalysis: '토론 분석 중 오류가 발생했습니다.'
+    };
+  }, []);
 
-  const analyzeDebate = async (data: DebateData) => {
+  const analyzeDebate = useCallback(async (data: DebateData) => {
     try {
       const response = await fetch('/api/debate/analyze', {
         method: 'POST',
@@ -103,9 +90,9 @@ export default function ResultsPage() {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [setDefaultResult]);
 
-  const convertDebateResult = (debateResult: any) => {
+  const convertDebateResult = useCallback((debateResult: {winner?: string, team1Score?: number, team2Score?: number, team1Strengths?: string, team2Strengths?: string, team1Weaknesses?: string, team2Weaknesses?: string, summary?: string, detailedAnalysis?: string, reasoning?: string}) => {
     // 토론 API 결과를 결과 페이지 형식으로 변환
     if (!debateResult) {
       return setDefaultResult();
@@ -122,21 +109,7 @@ export default function ResultsPage() {
       summary: debateResult.summary || debateResult.reasoning || '양 팀 모두 좋은 토론을 펼쳤습니다.',
       detailedAnalysis: debateResult.detailedAnalysis || debateResult.reasoning || '토론이 성공적으로 완료되었습니다.'
     };
-  };
-
-  const setDefaultResult = () => {
-    return {
-      winner: 'tie' as 'ai1' | 'ai2' | 'tie',
-      ai1Score: 75,
-      ai2Score: 75,
-      ai1Strengths: ['논리적 접근', '구체적 근거'],
-      ai2Strengths: ['창의적 관점', '감정적 어필'],
-      ai1Weaknesses: ['감정적 공감 부족'],
-      ai2Weaknesses: ['논리적 근거 부족'],
-      summary: '양 팀 모두 좋은 토론을 펼쳤습니다.',
-      detailedAnalysis: '토론 분석 중 오류가 발생했습니다.'
-    };
-  };
+  }, [setDefaultResult]);
 
   const goBack = () => {
     router.push('/');
@@ -173,24 +146,40 @@ export default function ResultsPage() {
     }
   };
 
-  const startReplay = () => {
-    setIsReplaying(true);
-    setCurrentReplayIndex(replayMessages.length - 1); // 모든 메시지 표시
-  };
-
-  const stopReplay = () => {
-    setIsReplaying(false);
-  };
 
   const resetReplay = () => {
     setCurrentReplayIndex(0);
-    setIsReplaying(false);
   };
 
   const showAllMessages = () => {
     setCurrentReplayIndex(replayMessages.length - 1);
-    setIsReplaying(false);
   };
+
+  useEffect(() => {
+    const savedData = localStorage.getItem('debateData');
+    const savedResult = localStorage.getItem('debateResult');
+    
+    if (savedData) {
+      const parsedData = JSON.parse(savedData);
+      setDebateData(parsedData);
+      
+      // 결과가 있으면 무조건 덮어쓰기
+      if (savedResult) {
+        const parsedResult = JSON.parse(savedResult);
+        console.log('저장된 토론 결과:', parsedResult);
+        const convertedResult = convertDebateResult(parsedResult);
+        console.log('변환된 결과:', convertedResult);
+        setResult(convertedResult);
+        setIsLoading(false);
+      } else {
+        // 결과가 없으면 분석 API 호출
+        console.log('결과 없음, 분석 API 호출');
+        analyzeDebate(parsedData);
+      }
+    } else {
+      router.push('/');
+    }
+  }, [router, analyzeDebate, convertDebateResult]);
 
   if (!debateData) {
     return (

@@ -7,7 +7,7 @@ const openai = new OpenAI({
 
 export async function POST(request: NextRequest) {
   try {
-    const { debateHistory, topic, prompt1, prompt2 } = await request.json();
+    const { debateHistory, topic, team1, team2 } = await request.json();
 
     if (!debateHistory || !topic) {
       return NextResponse.json(
@@ -21,8 +21,8 @@ export async function POST(request: NextRequest) {
 
 토론 주제: ${topic}
 
-팀 1 프롬프트: ${prompt1 || '찬성 측'}
-팀 2 프롬프트: ${prompt2 || '반대 측'}
+팀 1 프롬프트: ${team1?.prompt || '찬성 측'}
+팀 2 프롬프트: ${team2?.prompt || '반대 측'}
 
 토론 내용:
 ${debateHistory}
